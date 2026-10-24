@@ -115,3 +115,32 @@ async function createNote(event) {
 }
 
 form.addEventListener("submit", createNote);
+
+// JSONPlaceholder fakes writes: it replies as if a new note was saved but never stores it,
+// so notes created here cannot really be deleted on the server. Notes loaded from the
+// server get a real DELETE request. Notes created in this session (local: true) are
+// removed from the list only, and the status message says so.
+function addDeleteButton(li, note) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.textContent = "Delete";
+  btn.addEventListener("click", () => deleteNote(note, btn));
+  li.appendChild(btn);
+}
+
+async function deleteNote(note, btn) {
+  btn.disabled = true;
+  setStatus("Deleting note...", "loading");
+  try {
+    if (!note.local) {
+      await request(`${API_URL}/${note.id}`, { method: "DELETE" });
+    }
+    notes = notes.filter((n) => n.key !== note.key);
+    renderNotes();
+    setStatus("Note deleted.", "success");
+  } catch (error) {
+    console.error(error);
+    setStatus("Sorry, we could not delete that note. Please try again.", "error");
+    btn.disabled = false;
+  }
+}
