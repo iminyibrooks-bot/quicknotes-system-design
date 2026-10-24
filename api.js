@@ -65,3 +65,53 @@ async function loadNotes() {
 }
 
 loadBtn.addEventListener("click", loadNotes);
+
+const form = document.querySelector("#note-form");
+const titleInput = document.querySelector("#title-input");
+const bodyInput = document.querySelector("#body-input");
+const submitBtn = document.querySelector("#submit-btn");
+
+function validateTitle(title) {
+  if (title === "") return "Please enter a title.";
+  if (title.length > 100) return "Title must be 100 characters or fewer.";
+  return "";
+}
+
+async function createNote(event) {
+  event.preventDefault();
+  const title = titleInput.value.trim();
+  const body = bodyInput.value.trim();
+
+  const problem = validateTitle(title);
+  if (problem) {
+    setStatus(problem, "error");
+    return;
+  }
+
+  submitBtn.disabled = true;
+  setStatus("Saving note...", "loading");
+  try {
+    const { status, data } = await request(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=UTF-8" },
+      body: JSON.stringify({ title: title, body: body, userId: 1 }),
+    });
+    notes.unshift({
+      key: `local-${Date.now()}`,
+      id: data.id,
+      title: data.title,
+      body: data.body,
+      local: true,
+    });
+    renderNotes();
+    setStatus(`Note created (status ${status}, id ${data.id}).`, "success");
+    form.reset();
+  } catch (error) {
+    console.error(error);
+    setStatus("Sorry, we could not save your note. Please try again.", "error");
+  } finally {
+    submitBtn.disabled = false;
+  }
+}
+
+form.addEventListener("submit", createNote);
